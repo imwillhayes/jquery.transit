@@ -741,5 +741,104 @@
   // Export some functions for testable-ness.
   $.transit.getTransitionValue = getTransition;
 
+  /**
+   * 工具库
+   * @type {Object}
+   */
+  var Util = {
+    elementStyle: document.createElement('div').style,
+    // 判断浏览器内核类型
+    vendor: function() {
+      var vendors = ['t', 'webkitT', 'MozT', 'msT', 'OT'],
+          transform,
+          i = 0,
+          l = vendors.length;
+
+      for ( ; i < l; i++ ) {
+        transform = vendors[i] + 'ransform';
+        if ( transform in Util.elementStyle ) {
+          return vendors[i].substr(0, vendors[i].length-1);
+        }
+      }
+
+      return false;
+    },
+    // 判断浏览器来适配css属性值
+    prefixStyle: function(style) {
+      if ( Util.vendor() === false ) return false;
+      if ( Util.vendor() === '' ) return style;
+
+      return Util.vendor() + style.charAt(0).toUpperCase() + style.substr(1);
+    }
+  };
+
+  $.fn.cssEnd = function ( callback ){
+    var EventAnimateEnd = 'webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend';
+    this.one(EventAnimateEnd , callback);
+    return this;
+  };
+
+  $.fn.cssShow = function (className , callback){
+    var that = this;
+
+    setTimeout( function() {
+      $(that)
+        .show()
+        .addClass( className )
+        .cssEnd(function() {
+            $(that).removeClass( className );
+            callback && callback();
+        })
+    } ,10);
+
+    return this;
+  };
+
+  $.fn.cssHide = function (className , callback){
+    var that = this;
+
+    $(that)
+      .addClass( className )
+      .cssEnd(function() {
+        $(that)
+          .hide()
+          .removeClass( className );
+
+        callback && callback();
+      })
+  };
+
+  $.fn.returnTransit = function( options , delay , callback) {
+    var that = this;
+
+    var PremierStyle = {},
+        opts = {
+            duration : 1
+        }
+
+    $.extend(opts, options);
+
+    if ( $.isFunction(delay) ) {
+      callback = delay;
+      delay = 0;
+    }
+
+    for( var i in options) {
+      if (i in Util.elementStyle || Util.prefixStyle(i) in Util.elementStyle) {
+        PremierStyle[i] = that.css(i);
+      }
+    }
+
+    that.css( options );
+
+    setTimeout(function() {
+      that.transition(PremierStyle, opts.duration * 1000, function (){
+          callback && callback();
+      });
+    }, (delay || 0) * 1000);
+
+    return this;
+  };
+
   return $;
 }));
